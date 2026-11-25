@@ -106,6 +106,8 @@ export interface DingtalkMessageInput {
   at: string | number
   text: string
   senderId: string
+  /** Other IDs the same person has on the platform, such as a staff ID the other transport reports. */
+  senderAliases?: string[]
   senderName?: string
   /** `true` for a person; the history read reports robots as `robot`. */
   human: boolean
@@ -145,6 +147,7 @@ export function dingtalkTrigger(input: DingtalkMessageInput): Trigger | undefine
       conversationId: input.conversationId,
       messageId: input.messageId,
       senderName: input.senderName ?? '',
+      actorIds: [input.senderId, ...input.senderAliases ?? []].filter((id, index, all) => id && all.indexOf(id) === index),
       sendType: input.human ? 'user' : 'robot',
       direct: input.direct,
       mentioned: input.mentioned,

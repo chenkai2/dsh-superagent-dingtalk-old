@@ -73,6 +73,7 @@ async function pollGroups(host: SourceContext, config: DingtalkConfig, tally: { 
         at: message.createTime,
         text: message.text,
         senderId: message.senderOpenDingTalkId ?? message.senderId,
+        senderAliases: [message.senderId, message.senderOpenDingTalkId].filter((id): id is string => !!id),
         senderName: message.sender,
         human: message.sendType === 'user',
         direct: false,

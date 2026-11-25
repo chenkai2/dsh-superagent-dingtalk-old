@@ -102,7 +102,9 @@ export type AdmissionCell = 'listedUnaddressed' | 'unlistedAddressed' | 'unliste
  */
 export type AcceptMode = 'off' | 'observe' | 'auto'
 /** Where a Mandate's Trigger was received: its Source, its receiving scope as the Source recorded it, and its admission row. */
-interface Received { source?: string; scope?: Record<string, unknown>; row?: string }
+interface Received { source?: string; scope?: Record<string, unknown>; row?: string
+  /** Every platform ID the sender is known by, so an allowed list matches the person rather than one transport's spelling. */
+  actorIds?: string[] }
 /**
  * How the gate admitted the Trigger a Mandate came from, which `revalidate` re-checks (see `docs/002`):
  * - `addressed`: a sender on the Source's list addressed the agent;
