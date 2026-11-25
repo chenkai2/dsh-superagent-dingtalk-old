@@ -33,8 +33,9 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          # 刻意不写 registry-url / NODE_AUTH_TOKEN：写它会留下空的 _authToken 占位，
-          # 可能把 npm 从 OIDC trusted publishing 引到 token 路径。
+          # 刻意不写 registry-url / NODE_AUTH_TOKEN：registry 由仓库根目录的 .npmrc
+          # 固定为 npmjs；写 registry-url 会留下空的 _authToken 占位，可能把 npm
+          # 从 OIDC trusted publishing 引到 token 路径。
 
       - name: npm CLI 需支持 trusted publishing（≥ 11.5.1）
         run: npm install -g npm@latest
