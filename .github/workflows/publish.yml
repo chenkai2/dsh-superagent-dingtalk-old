@@ -28,9 +28,7 @@ jobs:
     environment: npm-publish  # 与 npm 侧 Trusted Publisher 里填的 environment 一致
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      - uses: pnpm/action-setup@v4   # 版本取自 package.json 的 packageManager，不在这里重复指定
       - uses: actions/setup-node@v4
         with:
           node-version: 22
