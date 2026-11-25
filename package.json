@@ -2,7 +2,7 @@
   "name": "@chenkai114/dsh-superagent-dingtalk",
   "author": "chenkai2",
   "license": "MIT",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "DingTalk source for dsh-superagent: reads configured groups through the official dws CLI, receives messages addressed to an application robot over Stream, and replies as a bot.",
   "type": "module",
   "main": "lib/index.js",
@@ -50,7 +50,7 @@
     "test": "vitest run",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "test:ci": "vitest run",
-    "prepublishOnly": "node -e \"if (process.env.GITHUB_ACTIONS || String(process.env.npm_config_dry_run||'')==='true') process.exit(0); console.error('\\n[拒绝发布] 本包只通过 GitHub Release + npm Trusted Publishing 发布。'); console.error('  本地 npm publish 会产出无 provenance 的版本，且绕开 CI 测试。'); console.error('  正确做法：升版本 → 提交 → 发 GitHub Release（tag=v<version>）→ 等 Actions 完成。\\n'); process.exit(1)\""
+    "prepublishOnly": "node -e \"const ci=process.env.GITHUB_ACTIONS;const dry=String(process.env.npm_config_dry_run||'')==='true';const boot=process.env.ALLOW_FIRST_PUBLISH==='1';if(ci)process.exit(0);if(dry)process.exit(0);if(boot){console.warn('\\\\n[首次发布] 允许本地发布一次：npm 上还没有这个包，Trusted Publisher 无处可配。');console.warn('  发完立刻去包设置里配 Trusted Publisher，之后只走 GitHub Release。\\\\n');process.exit(0);}console.error('\\\\n[拒绝发布] 本包只通过 GitHub Release + npm Trusted Publishing 发布。');console.error('  首次上架例外：ALLOW_FIRST_PUBLISH=1 npm publish --access public');console.error('  其余情况：升版本 → 提交 → 发 GitHub Release（tag=v<version>）→ 等 Actions 完成。\\\\n');process.exit(1)\""
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0",
