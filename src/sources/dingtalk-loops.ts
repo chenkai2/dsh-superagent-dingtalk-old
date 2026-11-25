@@ -29,6 +29,18 @@ export function addressedTo(text: string, names: readonly string[]): boolean {
  */
 export const ingestible = (message: { messageAiSendFlag?: string | null | undefined }): boolean => !message.messageAiSendFlag
 
+/**
+ * Steps a cursor back a few seconds before reading, because DingTalk indexes a message a moment after accepting it: a
+ * message indexed late would otherwise carry a time older than the cursor and never be read. The deterministic Trigger ID
+ * keeps the overlap from creating a second request.
+ * @param cursor The newest instant already ingested.
+ * @returns The instant to read from.
+ */
+export const readFrom = (cursor: string): string => {
+  const at = Date.parse(cursor)
+  return Number.isFinite(at) ? new Date(at - 5_000).toISOString() : cursor
+}
+
 /** Normalizes a Shanghai wall-clock timestamp so it can be compared with an ISO cursor. */
 function storableTime(value: string): string {
   const time = Date.parse(/[+-]\d{2}:?\d{2}$|Z$/.test(value) ? value : `${value.replace(' ', 'T')}+08:00`)
@@ -51,7 +63,7 @@ async function pollGroups(host: SourceContext, config: DingtalkConfig, tally: { 
     const stored = host.state.get(key)
     // A conversation this Source has never read starts now: earlier messages are not turned into requests.
     if (stored === undefined) { host.state.set(key, new Date().toISOString()); continue }
-    const page = await readDwsPage(host.commands, dws.cli, group.conversationId, stored, dws.pageSize)
+    const page = await readDwsPage(host.commands, dws.cli, group.conversationId, readFrom(stored), dws.pageSize)
     let newest = stored
     for (const message of page.messages) {
       if (!ingestible(message)) continue

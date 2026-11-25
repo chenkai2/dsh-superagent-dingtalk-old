@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { sendDingtalk } from '../src/sources/dingtalk-channel.ts'
 import { DingtalkConfigSchema } from '../src/sources/dingtalk-config.ts'
-import { addressedTo, ingestible } from '../src/sources/dingtalk-loops.ts'
+import { addressedTo, ingestible, readFrom } from '../src/sources/dingtalk-loops.ts'
 import { StreamMessageSchema, dingtalkChannel, dingtalkTime, dingtalkTrigger, dingtalkTriggerId, streamText }
   from '../src/sources/dingtalk-trigger.ts'
 import type { OutboundMessage } from '../src/core/index.ts'
@@ -117,4 +117,11 @@ it('treats a message a tool sent through the operator account as agent output, n
   expect(ingestible({ messageAiSendFlag: undefined })).toBe(true)
   expect(ingestible({ messageAiSendFlag: 'DWS' })).toBe(false)
   expect(ingestible({ messageAiSendFlag: null })).toBe(true)
+})
+
+it('reads from a few seconds before the cursor, so a late-indexed message is not skipped', () => {
+  const cursor = '2026-11-25T09:11:55.000Z'
+  expect(readFrom(cursor)).toBe('2026-11-25T09:11:50.000Z')
+  // An unreadable cursor is passed through rather than turned into an invalid time.
+  expect(readFrom('not-a-time')).toBe('not-a-time')
 })
