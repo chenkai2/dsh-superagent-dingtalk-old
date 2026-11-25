@@ -1,10 +1,9 @@
 {
-  "name": "dsh-superagent",
-  "author": "DeepSeek Harness Team <team@dsh.dev>",
+  "name": "@chenkai114/dsh-superagent-dingtalk",
+  "author": "chenkai2",
   "license": "MIT",
   "version": "0.1.0",
-  "private": true,
-  "description": "A proactive agent for one GitHub repository, as a DSH (DeepSeek Harness) bundle: it listens to GitHub and optionally Feishu, evaluates requests under a Policy, turns authorized ones into Tickets, and executes each in its own DSH Session.",
+  "description": "DingTalk source for dsh-superagent: reads configured groups through the official dws CLI, receives messages addressed to an application robot over Stream, and replies as a bot.",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -49,7 +48,9 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "test:ci": "vitest run",
+    "prepublishOnly": "node -e \"if (process.env.GITHUB_ACTIONS || String(process.env.npm_config_dry_run||'')==='true') process.exit(0); console.error('\\n[拒绝发布] 本包只通过 GitHub Release + npm Trusted Publishing 发布。'); console.error('  本地 npm publish 会产出无 provenance 的版本，且绕开 CI 测试。'); console.error('  正确做法：升版本 → 提交 → 发 GitHub Release（tag=v<version>）→ 等 Actions 完成。\\n'); process.exit(1)\""
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0",
@@ -123,5 +124,26 @@
     "react-dom": "18.3.1",
     "@types/react-dom": "18.3.7",
     "@deepseek-ai/dsh-subprocess": "0.2.1-alpha.2"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "superagent",
+    "dingtalk",
+    "dws",
+    "stream",
+    "bot",
+    "agent"
+  ],
+  "homepage": "https://github.com/chenkai2/dsh-superagent-dingtalk#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chenkai2/dsh-superagent-dingtalk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chenkai2/dsh-superagent-dingtalk/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

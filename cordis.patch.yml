@@ -5,14 +5,14 @@
     - id: dsh-superagent
       name: dsh-superagent
     - id: dsh-superagent-github
-      name: dsh-superagent/github-watch
+      name: '@chenkai114/dsh-superagent-dingtalk/github-watch'
     # Optional DingTalk Source; enable it, then set the groups, the dws CLI, and either a Stream robot or a group robot.
     - id: dsh-superagent-dingtalk
-      name: dsh-superagent/dingtalk-watch
+      name: '@chenkai114/dsh-superagent-dingtalk/dingtalk-watch'
       disabled: true
     # Optional Feishu Source; requires configuring a bot CLI after enabling.
     - id: dsh-superagent-feishu
-      name: dsh-superagent/feishu-watch
+      name: '@chenkai114/dsh-superagent-dingtalk/feishu-watch'
       disabled: true
     # The agent preset of every Executor Session (WORKER_PRESET in src/app/sessions.ts); the main Session has its own, below.
     # It is DSH's `standard` preset with only what a worker needs, and a shell whose foreground command moves to a background job

@@ -10,7 +10,8 @@ export function packageRoot(): string {
   for (let depth = 0; depth < 6; depth++) {
     const manifest = join(directory, 'package.json')
     if (existsSync(manifest)) {
-      try { if ((JSON.parse(readFileSync(manifest, 'utf8')) as { name?: string }).name === 'dsh-superagent') return cached = directory }
+      // The fork publishes under a scoped name, so match the identity rather than one exact spelling.
+      try { if ((JSON.parse(readFileSync(manifest, 'utf8')) as { name?: string }).name?.includes('dsh-superagent')) return cached = directory }
       catch { /* A foreign package.json on the way up is not this package. */ }
     }
     directory = dirname(directory)

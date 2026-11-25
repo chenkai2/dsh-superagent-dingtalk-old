@@ -1,12 +1,25 @@
-# dsh-superagent
+# dsh-superagent-dingtalk
 
-> **Research prototype for reference only, not an official DeepSeek product.** This code grew out of our team's day-to-day development work, with much of the engineering done by coding agents. Treat it as research code, not production-ready software. It may still contain bugs, and its coding style and engineering practices may be inconsistent. Review and adapt it before using it in your own environment.
->
-> We have adapted it for publication, so it is not identical to our internal version or the implementation described in *Exploring Super-agent Design: Towards a More Autonomous Agent System*. Some designs discussed in the article are directions for future development and are not implemented in this prototype.
+> **非官方 fork。** 基于 DeepSeek 的 [dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype)（MIT，研究原型），只做加法：上游的 GitHub 与飞书 Source 原样保留，新增一个**钉钉** Source。
 
-dsh-superagent is a proactive coding agent for one GitHub repository, packaged as a bundle for [DeepSeek Harness](https://www.deepseek.com/en/harness/). It listens to GitHub and, optionally, Feishu. When someone allowed asks the agent for work, it opens a work item, works on it in its own agent session and directory, and answers in the original conversation, for example with a pull request. A web panel shows what needs a person.
+给 [DeepSeek Harness](https://www.deepseek.com/en/harness/) 加一条钉钉通道：在群里 @ 机器人派活，它自己开工作面、干活，再把结果以**机器人身份**发回原对话；需要你拍板时会发一条「需要你决定」，你回一句它就接着干。
 
-It is also a way of working with an agent: **take as little human attention as possible, and give as much value as possible.** An agent that can act for a whole team can also waste a whole team's attention, so it acts only when asked or when a rule the team wrote allows it, and speaks only when someone must act or can use a result. [docs/000-philosophy.md](docs/000-philosophy.md) explains the principle and what it asks of the operator.
+```sh
+dsh plugin --profile superagent add @chenkai114/dsh-superagent-dingtalk
+```
+
+装完在 `cordis.patch.yml` 里把 `dsh-superagent-dingtalk` 那行的 `disabled` 去掉，重启后到面板 **来源 → 钉钉** 填配置。详细步骤见 [docs/006-deployment.md](docs/006-deployment.md) 的 DingTalk 小节。
+
+## 它解决的两个真问题
+
+**读和写必须用不同身份。** 钉钉没有「机器人读群全量消息」的接口，但**操作者本人的 OAuth 身份**能读到自己在的群的全部消息；反过来，机器人只能收到 @ 它的消息，却能稳定发消息。所以：
+
+- **读**：`dws` 以操作者身份轮询，拿到全量消息与历史；
+- **写**：一律以**机器人身份**发出（`sessionWebhook`、群机器人 webhook、或 `dws ... send-by-bot`）。
+
+结果是 agent 说的话永远署名机器人，不会冒充操作者。
+
+**「谁在说话」有三个正交信号。** `sendType: user` + 无标记是真人；`sendType: user` + `messageAiSendFlag` 是工具借你的账号发的（客户端显示「通过AI发送」），必须跳过，否则 agent 会把自己上一轮的输出当成新指令；`sendType: robot` 是机器人。详见下文。
 
 ## 这个 fork 增加了什么
 
