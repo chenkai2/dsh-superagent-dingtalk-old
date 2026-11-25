@@ -32,6 +32,22 @@ It is also a way of working with an agent: **take as little human attention as p
 
 结果是 agent 说的话永远署名机器人，不会冒充操作者。同理，读到 `sendType: robot` 的消息时它属于机器人，执行器会把它排除在「谁在派活」之外，避免把自己的输出当成新指令。
 
+### 怎么分辨「谁在说话」
+
+钉钉给了三个正交信号，合起来能唯一判定一条消息是谁发的：
+
+| `sendType` | `messageAiSendFlag` | 含义 | 本 Source 的处理 |
+| --- | --- | --- | --- |
+| `user` | 无 | 真人打的字 | 人可以派活 |
+| `user` | `DWS` | **工具通过操作者账号发的**（客户端显示「通过AI发送」） | 跳过：这是 agent 自己的输出，当输入会自激 |
+| `robot` | — | 机器人发的 | 只能作为候选，永远不能单独授权工作 |
+
+第二行是这套设计的关键。`dws chat message send` 以操作者身份发出，`sendType` 是 `user`，光看这个字段无法和自己的发言区分；钉钉用 `messageAiSendFlag` 补上了这层。所以：
+
+- **本 Source 从不用 `dws chat message send`**，回复一律走机器人身份（`sendType: robot`）；
+- 历史读取时，带 `messageAiSendFlag` 的消息**直接跳过**，避免把自己的话读成新指令；
+- 实测限制：Stream 回调的报文里**没有**这个字段，只有 `dws chat message list` 有。所以 Stream 路径靠「本 Source 不发操作者消息」来保证；轮询路径有结构化的双重保护。
+
 ### 打开它
 
 钉钉 Source 在 bundle 里默认 `disabled: true`。启用方式：

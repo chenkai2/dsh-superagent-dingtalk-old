@@ -170,6 +170,8 @@ The DingTalk Source is disabled in the bundle. Enable `dsh-superagent-dingtalk` 
 | `streamRobotCode` | The robot that posts through the OpenAPI when no group robot covers a conversation; defaults to the AppKey |
 | `bots` | One custom group robot per conversation: its `access_token`, and the signing * when it requires one. It posts to its own conversation and receives nothing |
 
+A message an AI tool sent through the operator's own account carries `messageAiSendFlag` and is skipped by the history read: `sendType` alone reports it as `user`, so without that flag the agent would read its own words as a new request. The Stream callback carries no such field, which is why this Source never posts as the operator.
+
 Reading and writing use different identities on purpose. `dws` reads as the operator, because DingTalk has no interface that lets a robot read a group's full history; every reply is posted as a bot, so the agent's words are never attributed to the operator. `dws chat message send` is therefore never used, and `blockedCommands` may name it to make that structural.
 
 The group a message came from is enough to answer it; no `prepare` command or repository is needed for chat-only Sources. With an application robot that is not yet approved, `dws` alone still works: it polls the groups, and a group robot webhook posts the answers.

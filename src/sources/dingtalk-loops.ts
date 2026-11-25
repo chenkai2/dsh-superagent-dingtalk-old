@@ -21,6 +21,14 @@ export function addressedTo(text: string, names: readonly string[]): boolean {
   return names.some(name => name.length > 0 && text.includes(`@${name}`))
 }
 
+/**
+ * Whether a message read from history may become a request. A message a tool sent through the operator's account is the
+ * agent's own output, and reading it as input would make the agent answer itself.
+ * @param message The message as the history read reported it.
+ * @returns False for a message the platform marks as sent by an AI tool.
+ */
+export const ingestible = (message: { messageAiSendFlag?: string | null | undefined }): boolean => !message.messageAiSendFlag
+
 /** Normalizes a Shanghai wall-clock timestamp so it can be compared with an ISO cursor. */
 function storableTime(value: string): string {
   const time = Date.parse(/[+-]\d{2}:?\d{2}$|Z$/.test(value) ? value : `${value.replace(' ', 'T')}+08:00`)
@@ -46,6 +54,7 @@ async function pollGroups(host: SourceContext, config: DingtalkConfig, tally: { 
     const page = await readDwsPage(host.commands, dws.cli, group.conversationId, stored, dws.pageSize)
     let newest = stored
     for (const message of page.messages) {
+      if (!ingestible(message)) continue
       const input: DingtalkMessageInput = {
         messageId: message.messageId,
         conversationId: message.openConversationId ?? message.conversationId ?? group.conversationId,

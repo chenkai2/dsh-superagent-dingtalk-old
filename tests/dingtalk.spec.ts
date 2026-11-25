@@ -2,8 +2,9 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { sendDingtalk } from '../src/sources/dingtalk-channel.ts'
 import { DingtalkConfigSchema } from '../src/sources/dingtalk-config.ts'
-import { addressedTo } from '../src/sources/dingtalk-loops.ts'
-import { dingtalkChannel, dingtalkTime, dingtalkTrigger, dingtalkTriggerId } from '../src/sources/dingtalk-trigger.ts'
+import { addressedTo, ingestible } from '../src/sources/dingtalk-loops.ts'
+import { StreamMessageSchema, dingtalkChannel, dingtalkTime, dingtalkTrigger, dingtalkTriggerId, streamText }
+  from '../src/sources/dingtalk-trigger.ts'
 import type { OutboundMessage } from '../src/core/index.ts'
 import type { SourceContext } from '../src/sources/host.ts'
 
@@ -100,4 +101,20 @@ it('prefers the reply address the Stream message carried, and falls back to a gr
 it('refuses to send when no sender covers the conversation', async () => {
   const host = hostWith(DingtalkConfigSchema.parse({}))
   await expect(sendDingtalk(host, message())).rejects.toThrow(/No DingTalk sender covers conversation cid\/A/)
+})
+it('flattens the rich text a mention arrives in, and keeps a plain text body', () => {
+  const rich = StreamMessageSchema.parse({ msgId: 'm1', conversationId: 'cid/A', createAt: 1, msgtype: 'richText',
+    content: JSON.stringify({ richText: [{ text: '@小钉' }, { text: ' 看一下这个' }] }), isInAtList: true })
+  expect(streamText(rich)).toBe('@小钉 看一下这个')
+  const plain = StreamMessageSchema.parse({ msgId: 'm2', conversationId: 'cid/A', createAt: 1, msgtype: 'text', text: { content: 'hi' } })
+  expect(streamText(plain)).toBe('hi')
+  // A body this Source cannot read yields no text, so no Trigger is built from it.
+  expect(streamText(StreamMessageSchema.parse({ msgId: 'm3', conversationId: 'cid/A', createAt: 1, msgtype: 'picture' }))).toBe('')
+})
+
+it('treats a message a tool sent through the operator account as agent output, not as a request', () => {
+  // `sendType` reports both of these as `user`; only the AI flag separates the agent's own words from the operator's.
+  expect(ingestible({ messageAiSendFlag: undefined })).toBe(true)
+  expect(ingestible({ messageAiSendFlag: 'DWS' })).toBe(false)
+  expect(ingestible({ messageAiSendFlag: null })).toBe(true)
 })

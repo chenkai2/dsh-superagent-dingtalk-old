@@ -1,6 +1,6 @@
 /** Receives DingTalk robot messages over the official Stream long connection. */
 import { DWClient, TOPIC_ROBOT } from 'dingtalk-stream'
-import { StreamMessageSchema, type DingtalkMessageInput } from './dingtalk-trigger.ts'
+import { StreamMessageSchema, streamText, type DingtalkMessageInput } from './dingtalk-trigger.ts'
 import type { Health } from './host.ts'
 
 /** The credentials and identity of the application robot that receives messages. */
@@ -69,14 +69,15 @@ export class DingtalkStream {
       messageId: message.msgId,
       conversationId: message.conversationId,
       at: message.createAt,
-      text: message.text.content,
+      text: streamText(message),
       senderId: message.senderStaffId || message.senderId,
       senderName: message.senderNick,
       human: true,
       direct,
-      // A group message reaches the robot only when it addresses the robot.
-      mentioned: !direct,
+      // A group message reaches the robot only when it addresses the robot; `isInAtList` states it structurally.
+      mentioned: !direct && (message.isInAtList ?? true),
       robotCode: message.robotCode ?? this.robotCode,
+      conversationTitle: message.conversationTitle,
     }
     void this.handlers.message(input, input.robotCode ?? this.robotCode)
       .catch((error: unknown) => this.handlers.report('error', `Stream message handling failed: ${String(error)}`))

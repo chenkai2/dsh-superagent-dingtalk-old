@@ -38,15 +38,24 @@ export const DwsMessageSchema = z.looseObject({
   senderId: z.string().default(''),
   senderOpenDingTalkId: z.string().nullish(),
   sendType: z.string().default('user'),
+  /**
+   * Set to `DWS` (and to other tool names later) on a message an AI tool sent through the operator's own account. Such a
+   * message is a person's account speaking, not a person: it must never become a request, or the agent would answer itself.
+   */
+  messageAiSendFlag: z.string().nullish(),
   text: z.string().default(''),
 })
 export type DwsMessage = z.infer<typeof DwsMessageSchema>
 
-/** A robot message as the Stream callback delivers it. */
+/**
+ * A message as the Stream callback delivers it. A message that addresses the robot arrives as `richText`, whose text is a
+ * JSON `content` string, not as `text`; a plain text message carries `text.content` instead.
+ */
 export const StreamMessageSchema = z.looseObject({
   msgId: z.string(),
   conversationId: z.string(),
   conversationType: z.string().default('2'),
+  conversationTitle: z.string().optional(),
   chatbotUserId: z.string().optional(),
   robotCode: z.string().optional(),
   senderId: z.string().default(''),
@@ -54,13 +63,40 @@ export const StreamMessageSchema = z.looseObject({
   senderStaffId: z.string().optional(),
   createAt: z.number(),
   msgtype: z.string().default('text'),
-  text: z.looseObject({ content: z.string().default('') }).default({ content: '' }),
+  text: z.looseObject({ content: z.string().default('') }).optional(),
+  /** The rich-text body of a message that addresses the robot; the platform sends it as an object, not JSON text. */
+  content: z.union([z.string(), z.looseObject({ richText: z.array(z.looseObject({ text: z.string().optional() })).optional() })]).optional(),
+  /** Whether the robot is among the addressed members; the platform sets it for every group message it delivers. */
+  isInAtList: z.boolean().optional(),
   sessionWebhook: z.string().optional(),
   sessionWebhookExpiredTime: z.number().optional(),
   atUsers: z.array(z.looseObject({ dingtalkId: z.string().optional(), staffId: z.string().optional() })).default([]),
-  isInAtList: z.boolean().optional(),
 })
 export type StreamMessage = z.infer<typeof StreamMessageSchema>
+
+/**
+ * Flattens a Stream message body to plain text. A rich-text body is a JSON `content` whose `richText` array carries text
+ * runs in order, so a mention and the request that follows it read as one sentence.
+ * @param message The message as the Stream callback delivered it.
+ * @returns The text, or an empty string when the body carries none this Source can read.
+ */
+export function streamText(message: StreamMessage): string {
+  const content = message.content
+  if (content !== undefined) {
+    const body = typeof content === 'string' ? parseRichText(content) : content
+    const runs = body?.richText
+    if (Array.isArray(runs)) return runs.map(run => typeof run?.text === 'string' ? run.text : '').join('')
+  }
+  return message.text?.content ?? ''
+}
+
+/** Reads a rich-text body the platform sent as a JSON string; anything else reads as no runs. */
+function parseRichText(value: string): { richText?: { text?: string }[] } | undefined {
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return parsed !== null && typeof parsed === 'object' ? parsed as { richText?: { text?: string }[] } : undefined
+  } catch { return undefined /* A body that is not JSON falls through to `text`. */ }
+}
 
 /** What a normalized message carries into a Trigger, independent of which transport read it. */
 export interface DingtalkMessageInput {
@@ -80,6 +116,8 @@ export interface DingtalkMessageInput {
   sessionWebhook?: string | undefined
   sessionWebhookExpiredTime?: number | undefined
   robotCode?: string | undefined
+  /** The conversation's display name, when the transport reports one. */
+  conversationTitle?: string | undefined
   /** Set when a Thread's message is quoted, so a reply can quote it too. */
   quoteMessageId?: string | undefined
 }
@@ -113,6 +151,7 @@ export function dingtalkTrigger(input: DingtalkMessageInput): Trigger | undefine
       ...input.sessionWebhook ? { sessionWebhook: input.sessionWebhook } : {},
       ...input.sessionWebhookExpiredTime ? { sessionWebhookExpiredTime: input.sessionWebhookExpiredTime } : {},
       ...input.robotCode ? { robotCode: input.robotCode } : {},
+      ...input.conversationTitle ? { conversationTitle: input.conversationTitle } : {},
       ...input.quoteMessageId ? { quoteMessageId: input.quoteMessageId } : {},
     },
   }
